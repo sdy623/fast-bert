@@ -227,6 +227,7 @@ class BertLearner(Learner):
         learning_rate: float = 4e-5,
         optimizer_type: str = "lamb",
         epochs: int = 6,
+        clearML_task: bool = False
     ):
         if is_fp16 and (IS_AMP_AVAILABLE is False):
             logger.debug("Apex not installed. switching off FP16 training")
@@ -265,6 +266,7 @@ class BertLearner(Learner):
             learning_rate,
             optimizer_type,
             epochs,
+            clearML_task
         )
 
     def __init__(
@@ -291,6 +293,7 @@ class BertLearner(Learner):
         learning_rate: float = 4e-5,
         optimizer_type: str = "lamb",
         epochs: int = 6,
+        clearML_task: bool = None,
     ):
         super(BertLearner, self).__init__(
             data,
@@ -341,10 +344,14 @@ class BertLearner(Learner):
                 + 1
             )
         else:
-            t_total = len(train_dataloader) // self.grad_accumulation_steps * epochs
+            if train_dataloader is None:
+                t_total = 0
+            else:
+                t_total = len(train_dataloader) // self.grad_accumulation_steps * epochs
 
         self.lr_scheduler = self.get_scheduler(self.optimizer, t_total=t_total)
         self.epochs = epochs
+        self.clearML_task = clearML_task
 
         # Callbacks
         callbacks = (
@@ -402,6 +409,9 @@ class BertLearner(Learner):
         schedule_type="warmup_cosine",
         optimizer_type="lamb",
     ):
+        if self.clearML_task:
+            clearML_task = self.clearML_task
+
         results_val = []
         tensorboard_dir = self.output_dir / "tensorboard"
         tensorboard_dir.mkdir(exist_ok=True)
@@ -531,6 +541,8 @@ class BertLearner(Learner):
                             # evaluate model
                             results = self.validate()
                             for key, value in results.items():
+                                if key == 'ROC_AUC':
+                                    value = value['micro']
                                 tb_writer.add_scalar(
                                     "eval_{}".format(key), value, global_step
                                 )
@@ -569,9 +581,13 @@ class BertLearner(Learner):
             if validate:
                 results = self.validate()
                 for key, value in results.items():
+                    if key == 'ROC_AUC':
+                        value = value['micro']
                     self.logger.info(
                         "eval_{} after epoch {}: {}: ".format(key, (epoch + 1), value)
                     )
+                    if self.clearML_task:
+                        clearML_task.get_logger().report_scalar(key, 'train', iteration=epoch, value=value)
                 results_val.append(results)
 
             self.state.epoch = epoch + 1
@@ -590,6 +606,7 @@ class BertLearner(Learner):
                 )
             )
             self.logger.info("\n")
+            
 
         tb_writer.close()
         self.control = self.callback_handler.on_train_end(
@@ -701,7 +718,7 @@ class BertLearner(Learner):
         results = {"loss": eval_loss, "return_preds": return_preds}
 
         if return_preds:
-            results["y_preds"] = np.argmax(all_logits.detach().cpu().numpy(), axis=1)
+            results["y_preds"] = torch.sigmoid(all_logits).detach().cpu().numpy() ## np.argmax(all_logits.detach().cpu().numpy(), axis=1) ## torch.sigmoid(all_logits).detach().cpu().numpy()
             results["y_true"] = all_labels.detach().cpu().numpy()
             results["labels"] = self.data.labels
 

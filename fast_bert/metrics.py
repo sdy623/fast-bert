@@ -87,8 +87,9 @@ def roc_auc(y_pred: Tensor, y_true: Tensor, **kwargs):
     # Compute micro-average ROC curve and ROC area
     fpr["micro"], tpr["micro"], _ = roc_curve(y_true.ravel(), y_pred.ravel())
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
-
-    return roc_auc["micro"]
+    roc_auc['fpr'] = fpr["micro"]
+    roc_auc["tpr"] = tpr["micro"]
+    return roc_auc
 
 
 def Hamming_loss(
