@@ -193,6 +193,10 @@ class BertForMultiLabelSequenceClassification(BertForSequenceClassification):
         labels=None,
         position_ids=None,
         head_mask=None,
+        inputs_embeds=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
     ):
 
         import pdb
@@ -204,6 +208,10 @@ class BertForMultiLabelSequenceClassification(BertForSequenceClassification):
             token_type_ids=token_type_ids,
             attention_mask=attention_mask,
             head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict
         )
         pooled_output = outputs[1]
 

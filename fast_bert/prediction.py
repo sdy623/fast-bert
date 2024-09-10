@@ -23,6 +23,7 @@ class BertClassificationPredictor(object):
         use_fast_tokenizer=True,
         do_lower_case=True,
         device=None,
+        enable_lora=False
     ):
         if device is None:
             device = (
@@ -37,6 +38,7 @@ class BertClassificationPredictor(object):
         self.model_type = model_type
         self.do_lower_case = do_lower_case
         self.device = device
+        self.enable_lora = enable_lora
 
         # Use auto-tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -75,6 +77,7 @@ class BertClassificationPredictor(object):
             is_fp16=False,
             multi_label=self.multi_label,
             logging_steps=0,
+            enable_lora=self.enable_lora,
         )
 
         return learner

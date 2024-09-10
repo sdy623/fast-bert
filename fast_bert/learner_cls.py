@@ -149,6 +149,7 @@ def load_model(
     multi_label,
     pos_weight,
     weight,
+    enable_lora=False,
 ):
     model_type = dataBunch.model_type
     model_state_dict = None
@@ -197,6 +198,15 @@ def load_model(
                 str(pretrained_path), config=config
             )
 
+    if enable_lora is True:
+        from peft import LoraConfig, TaskType, get_peft_model
+
+        lora_config = LoraConfig(
+            task_type=TaskType.SEQ_CLS, r=2, lora_alpha=16, lora_dropout=0.1, bias="none",
+        )
+        
+        model = get_peft_model(model, lora_config)
+        model.print_trainable_parameters()
     return model.to(device)
 
 
@@ -227,7 +237,8 @@ class BertLearner(Learner):
         learning_rate: float = 4e-5,
         optimizer_type: str = "lamb",
         epochs: int = 6,
-        clearML_task: bool = False
+        clearML_task: bool = False,
+        enable_lora: bool = False,
     ):
         if is_fp16 and (IS_AMP_AVAILABLE is False):
             logger.debug("Apex not installed. switching off FP16 training")
@@ -241,6 +252,7 @@ class BertLearner(Learner):
             multi_label,
             pos_weight,
             weight,
+            enable_lora,
         )
 
         return BertLearner(
@@ -266,7 +278,8 @@ class BertLearner(Learner):
             learning_rate,
             optimizer_type,
             epochs,
-            clearML_task
+            clearML_task,
+            enable_lora
         )
 
     def __init__(
@@ -293,7 +306,8 @@ class BertLearner(Learner):
         learning_rate: float = 4e-5,
         optimizer_type: str = "lamb",
         epochs: int = 6,
-        clearML_task: bool = None,
+        clearML_task: bool = False,
+        enable_lora: bool = False,
     ):
         super(BertLearner, self).__init__(
             data,
@@ -718,7 +732,7 @@ class BertLearner(Learner):
         results = {"loss": eval_loss, "return_preds": return_preds}
 
         if return_preds:
-            results["y_preds"] = torch.sigmoid(all_logits).detach().cpu().numpy() ## np.argmax(all_logits.detach().cpu().numpy(), axis=1) ## torch.sigmoid(all_logits).detach().cpu().numpy()
+            results["y_preds"] = np.argmax(all_logits.detach().cpu().numpy(), axis=1) ## torch.sigmoid(all_logits).detach().cpu().numpy()
             results["y_true"] = all_labels.detach().cpu().numpy()
             results["labels"] = self.data.labels
 
