@@ -2,6 +2,8 @@ import os
 import copy
 import logging
 from packaging import version
+from peft import LoraConfig
+
 from .data_cls import BertDataBunch
 from tqdm.autonotebook import tqdm
 import matplotlib.pyplot as plt
@@ -150,6 +152,7 @@ def load_model(
     pos_weight,
     weight,
     enable_lora=False,
+    lora_config=None,
 ):
     model_type = dataBunch.model_type
     model_state_dict = None
@@ -201,9 +204,10 @@ def load_model(
     if enable_lora is True:
         from peft import LoraConfig, TaskType, get_peft_model
 
-        lora_config = LoraConfig(
-            task_type=TaskType.SEQ_CLS, r=2, lora_alpha=16, lora_dropout=0.1, bias="none",
-        )
+        if lora_config is None:
+            lora_config = LoraConfig(
+                task_type=TaskType.SEQ_CLS, r=2, lora_alpha=16, lora_dropout=0.1, bias="none",
+            )
         
         model = get_peft_model(model, lora_config)
         model.print_trainable_parameters()
@@ -239,6 +243,7 @@ class BertLearner(Learner):
         epochs: int = 6,
         clearML_task: bool = False,
         enable_lora: bool = False,
+        lora_config: LoraConfig = None,
     ):
         if is_fp16 and (IS_AMP_AVAILABLE is False):
             logger.debug("Apex not installed. switching off FP16 training")
@@ -253,6 +258,7 @@ class BertLearner(Learner):
             pos_weight,
             weight,
             enable_lora,
+            lora_config
         )
 
         return BertLearner(
@@ -279,7 +285,8 @@ class BertLearner(Learner):
             optimizer_type,
             epochs,
             clearML_task,
-            enable_lora
+            enable_lora,
+            lora_config
         )
 
     def __init__(
@@ -308,6 +315,7 @@ class BertLearner(Learner):
         epochs: int = 6,
         clearML_task: bool = False,
         enable_lora: bool = False,
+        lora_config: LoraConfig = None,
     ):
         super(BertLearner, self).__init__(
             data,
@@ -602,6 +610,9 @@ class BertLearner(Learner):
                     )
                     if self.clearML_task:
                         clearML_task.get_logger().report_scalar(key, 'train', iteration=epoch, value=value)
+                        clearML_task.get_logger().report_scalar(
+                            "lr", 'train', iteration=epoch, value=self.lr_scheduler.get_lr()[0]
+                        )
                 results_val.append(results)
 
             self.state.epoch = epoch + 1
@@ -732,7 +743,10 @@ class BertLearner(Learner):
         results = {"loss": eval_loss, "return_preds": return_preds}
 
         if return_preds:
-            results["y_preds"] = np.argmax(all_logits.detach().cpu().numpy(), axis=1) ## torch.sigmoid(all_logits).detach().cpu().numpy()
+            if self.multi_label:
+                results["y_preds"] = torch.sigmoid(all_logits).detach().cpu().numpy()
+            else:
+                results["y_preds"] = np.argmax(all_logits.detach().cpu().numpy(), axis=1) ##
             results["y_true"] = all_labels.detach().cpu().numpy()
             results["labels"] = self.data.labels
 

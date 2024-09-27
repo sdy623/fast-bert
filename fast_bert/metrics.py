@@ -84,8 +84,15 @@ def roc_auc(y_pred: Tensor, y_true: Tensor, **kwargs):
     y_true = y_true.detach().cpu().numpy()
     y_pred = y_pred.detach().cpu().numpy()
 
+    '''
+    print(y_true.shape)
+    print(y_true.ravel())
+    print(y_pred.shape)
+    print(y_pred.ravel())
+    '''
     # Compute micro-average ROC curve and ROC area
     fpr["micro"], tpr["micro"], _ = roc_curve(y_true.ravel(), y_pred.ravel())
+    
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
     roc_auc['fpr'] = fpr["micro"]
     roc_auc["tpr"] = tpr["micro"]
