@@ -1,5 +1,6 @@
 import torch
 from pathlib import Path
+
 import logging
 
 from transformers import (
@@ -10,6 +11,9 @@ from transformers import (
     get_cosine_schedule_with_warmup,
     get_cosine_with_hard_restarts_schedule_with_warmup,
 )
+
+from transformers.onnx.convert import export
+from transformers.models.bert import BertConfig, BertOnnxConfig
 
 from pytorch_lamb import Lamb
 
@@ -143,3 +147,21 @@ class Learner(object):
 
         # save the tokenizer
         self.data.tokenizer.save_pretrained(path)
+
+    def export_onnx(self, path=None):
+        if not path:
+            path = self.output_dir / "model_out"
+
+        path.mkdir(exist_ok=True)
+
+        torch.cuda.empty_cache()
+
+        model_to_save = (
+            self.model.module if hasattr(self.model, "module") else self.model
+        )
+
+        bert_onnx_config = BertOnnxConfig(model_to_save.config)
+        # Handles all the above steps for you
+        export(preprocessor=self.data.tokenizer, model=model_to_save,
+               output=Path.joinpath(path, Path("model.onnx")), opset=15, device=self.device,
+               config=bert_onnx_config)

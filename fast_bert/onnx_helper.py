@@ -30,10 +30,14 @@ def create_model_for_provider(model_path: str, provider: str) -> InferenceSessio
     return session
 
 
-def load_model(model_path: Path):
+def load_model(model_path: Path, provider="CPUExecutionProvider"):
+    providers = get_all_providers()
+    print(providers)
+    print(provider)
+
     try:
         quantized_model = create_model_for_provider(
-            model_path.as_posix(), "CPUExecutionProvider"
+            model_path.as_posix(), provider
         )
         return quantized_model
     except Exception as e:

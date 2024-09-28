@@ -127,7 +127,10 @@ class BertOnnxClassificationPredictor(object):
         with open(label_path / "labels.csv", "r") as f:
             self.labels = f.read().split("\n")
 
-        self.model = load_model(Path(self.model_path) / model_name)
+        if device.type == 'cuda':
+            self.model = load_model(Path(self.model_path) / model_name, provider='CUDAExecutionProvider')
+        else:
+            self.model = load_model(Path(self.model_path) / model_name, provider='CPUExecutionProvider')
 
     def predict(self, text, verbose=False):
         # Inputs are provided through numpy array
