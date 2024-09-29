@@ -6,7 +6,7 @@ from sklearn.metrics import (
     confusion_matrix as sklearn_confusion_matrix,
 )
 import numpy as np
-from torch import Tensor
+from torch import Tensor, argmax
 
 import pdb
 import logging
@@ -65,11 +65,19 @@ def fbeta(
     beta2 = beta ** 2
     if sigmoid:
         y_pred = y_pred.sigmoid()
-    y_pred = (y_pred > thresh).float()
-    y_true = y_true.float()
-    TP = (y_pred * y_true).sum(dim=1)
-    prec = TP / (y_pred.sum(dim=1) + eps)
-    rec = TP / (y_true.sum(dim=1) + eps)
+
+    if len(kwargs['labels']) <= 2:
+        y_pred = argmax(y_pred, dim=1)
+        y_true = y_true.float()
+        TP = (y_pred * y_true).sum()
+        prec = TP / (y_pred.sum() + eps)
+        rec = TP / (y_true.sum() + eps)
+    else:
+        y_pred = (y_pred > thresh).float()
+        y_true = y_true.float()
+        TP = (y_pred * y_true).sum(dim=1)
+        prec = TP / (y_pred.sum(dim=1) + eps)
+        rec = TP / (y_true.sum(dim=1) + eps)
     res = (prec * rec) / (prec * beta2 + rec + eps) * (1 + beta2)
     return res.mean().item()
 
@@ -82,7 +90,10 @@ def roc_auc(y_pred: Tensor, y_true: Tensor, **kwargs):
     roc_auc = dict()
 
     y_true = y_true.detach().cpu().numpy()
-    y_pred = y_pred.detach().cpu().numpy()
+    if len(kwargs['labels']) <= 2:
+        y_pred = y_pred.sigmoid()[:,-1].detach().cpu().numpy()
+    else:
+        y_pred = y_pred.detach().cpu().numpy()
 
     '''
     print(y_true.shape)
@@ -136,14 +147,14 @@ def F1(
     threshold: float = CLASSIFICATION_THRESHOLD,
     **kwargs
 ):
-    return fbeta(y_pred, y_true, thresh=threshold, beta=1)
+    return fbeta(y_pred, y_true, thresh=threshold, beta=1, **kwargs)
 
 
 def confusion_matrix(y_pred: Tensor, y_true: Tensor, **kwargs):
     try:
         y_pred = np.argmax(y_pred.detach().cpu().numpy(), axis=1)
         return sklearn_confusion_matrix(
-            y_true.detach().cpu().numpy(), y_pred, labels=kwargs.get("labels"),
+            y_true.detach().cpu().numpy(), y_pred
         )
     except Exception as e:
         logger.error(e)
