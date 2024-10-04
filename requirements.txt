@@ -4,7 +4,7 @@ tensorboardX
 fastprogress
 scikit-learn
 seqeval
-transformers~=4.44
+transformers>4.40
 tqdm
 pandas
 python-box

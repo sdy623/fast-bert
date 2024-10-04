@@ -1,6 +1,8 @@
 import os
 import copy
 import logging
+
+import clearml
 from packaging import version
 from peft import LoraConfig
 
@@ -12,6 +14,7 @@ from torch import nn
 from typing import List, Optional
 
 from .modeling import (
+    BartForMultiLabelSequenceClassification,
     BertForMultiLabelSequenceClassification,
     XLNetForMultiLabelSequenceClassification,
     RobertaForMultiLabelSequenceClassification,
@@ -35,6 +38,9 @@ from tensorboardX import SummaryWriter
 
 from transformers import (
     WEIGHTS_NAME,
+    BartConfig,
+    BartForSequenceClassification,
+    BartTokenizer,
     BertConfig,
     BertForSequenceClassification,
     BertTokenizer,
@@ -81,6 +87,11 @@ PYTORCH_VERSION = version.parse(torch.__version__)
 DEFAULT_CALLBACKS = [DefaultFlowCallback]
 
 MODEL_CLASSES = {
+    "bart": (
+        BartConfig,
+        (BartForSequenceClassification, BartForMultiLabelSequenceClassification),
+        BartTokenizer,
+    ),
     "bert": (
         BertConfig,
         (BertForSequenceClassification, BertForMultiLabelSequenceClassification),
@@ -180,7 +191,7 @@ def load_model(
         )
 
         model = model_class[1].from_pretrained(
-            str(pretrained_path), config=config, state_dict=model_state_dict
+            str(pretrained_path), config=config, state_dict=model_state_dict, ignore_mismatched_sizes=True
         )
     else:
         if finetuned_wgts_path:
@@ -241,7 +252,7 @@ class BertLearner(Learner):
         learning_rate: float = 4e-5,
         optimizer_type: str = "lamb",
         epochs: int = 6,
-        clearML_task: bool = False,
+        clearML_task: Optional[clearml.Task] = None,
         enable_lora: bool = False,
         lora_config: LoraConfig = None,
     ):
@@ -313,7 +324,7 @@ class BertLearner(Learner):
         learning_rate: float = 4e-5,
         optimizer_type: str = "lamb",
         epochs: int = 6,
-        clearML_task: bool = False,
+        clearML_task: Optional[clearml.Task] = None,
         enable_lora: bool = False,
         lora_config: LoraConfig = None,
     ):
