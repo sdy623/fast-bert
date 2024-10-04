@@ -1,4 +1,8 @@
 import clearml
+from clearml.utilities.plotly_reporter import SeriesInfo
+import numpy as np
+from typing import List, Optional
+
 import torch
 from pathlib import Path
 
@@ -36,6 +40,7 @@ class Learner(object):
         max_grad_norm=1.0,
         adam_epsilon=1e-8,
         logging_steps=100,
+        clearML_task: Optional[clearml.Task] = None,
     ):
 
         if isinstance(output_dir, str):
@@ -174,7 +179,68 @@ class Learner(object):
         path.mkdir(exist_ok=True)
 
         torch.cuda.empty_cache()
+        task_reporter_sc = task.get_all_reported_scalars()
         output_model = clearml.OutputModel(task=task, framework="PyTorch")
+
+        acc_series = task_reporter_sc['accuracy_multilabel']['val']
+        f1_series = task_reporter_sc['F1']['val']
+        roc_auc_series = task_reporter_sc['ROC_AUC']['val']
+        loss_series = task_reporter_sc['loss']['val']
+
+        '''
+        '''
+        output_model.report_line_plot(
+            title="Accuracy", series=[
+                    SeriesInfo(
+                        name="val",
+                        data=np.column_stack(
+                            (acc_series['x'], acc_series['y'])
+                        )
+            )],
+            xaxis="Iterations",
+            yaxis="Validation Accuracy",
+        )
+
+        output_model.report_line_plot(
+            title="F1", series=[
+                    SeriesInfo(
+                        name="val",
+                        data=np.column_stack(
+                            (f1_series['x'], f1_series['y'])
+                        )
+            )],
+            xaxis="Iterations",
+            yaxis="Validation F1",
+        )
+
+        output_model.report_line_plot(
+            title="AUC", series=[
+                    SeriesInfo(
+                        name="val",
+                        data=np.column_stack(
+                            (roc_auc_series['x'], roc_auc_series['y'])
+                        )
+            )],
+            xaxis="Iterations",
+            yaxis="Validation AUC",
+        )
+
+        output_model.report_line_plot(
+            title="Loss", series=[
+                    SeriesInfo(
+                        name="val",
+                        data=np.column_stack(
+                            (loss_series['x'], loss_series['y'])
+                        )
+            )],
+            xaxis="Iterations",
+            yaxis="Validation Loss ",
+        )
+
+        output_model.report_single_value("Accuracy", acc_series['y'][-1])
+        output_model.report_single_value("F1", f1_series['y'][-1])
+        output_model.report_single_value("ROC_AUC", roc_auc_series['y'][-1])
+        output_model.report_single_value("Loss", loss_series['y'][-1])
         #output_model.update_labels()
         output_model.update_weights(weights_filename=str(Path.joinpath(path, Path("model.safetensors"))), upload_uri=upload_uri)
         #task.update_output_model(model_path=str(Path.joinpath(path, Path("model.safetensors"))), model_name="model_name")

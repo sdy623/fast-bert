@@ -82,6 +82,7 @@ from transformers.trainer_callback import (
     CallbackHandler,
     DefaultFlowCallback,
 )
+import clearml
 
 PYTORCH_VERSION = version.parse(torch.__version__)
 DEFAULT_CALLBACKS = [DefaultFlowCallback]
@@ -620,9 +621,9 @@ class BertLearner(Learner):
                         "eval_{} after epoch {}: {}: ".format(key, (epoch + 1), value)
                     )
                     if self.clearML_task:
-                        clearML_task.get_logger().report_scalar(key, 'train', iteration=epoch, value=value)
+                        clearML_task.get_logger().report_scalar(key, 'val', iteration=epoch, value=value)
                         clearML_task.get_logger().report_scalar(
-                            "lr", 'train', iteration=epoch, value=self.lr_scheduler.get_lr()[0]
+                            "lr", 'val', iteration=epoch, value=self.lr_scheduler.get_lr()[0]
                         )
                 results_val.append(results)
 
