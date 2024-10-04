@@ -167,7 +167,7 @@ class Learner(object):
                output=Path.joinpath(path, Path("model.onnx")), opset=15, device=self.device,
                config=bert_onnx_config)
 
-    def upload_model(self, path=None, task: clearml.Task=None, model_name="bert-base-uncased"):
+    def upload_model(self, path=None, task: clearml.Task=None, model_name="bert-base-uncased", upload_uri=None):
         if not path:
             path = self.output_dir / "model_out"
 
@@ -175,4 +175,6 @@ class Learner(object):
 
         torch.cuda.empty_cache()
         output_model = clearml.OutputModel(task=task, framework="PyTorch")
-        task.update_output_model(model_path=str(Path.joinpath(path, Path("model.safetensors"))), model_name="model_name")
+        #output_model.update_labels()
+        output_model.update_weights(weights_filename=str(Path.joinpath(path, Path("model.safetensors"))), upload_uri=upload_uri)
+        #task.update_output_model(model_path=str(Path.joinpath(path, Path("model.safetensors"))), model_name="model_name")
