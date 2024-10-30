@@ -621,9 +621,9 @@ class BertLearner(Learner):
                         "eval_{} after epoch {}: {}: ".format(key, (epoch + 1), value)
                     )
                     if self.clearML_task:
-                        clearML_task.get_logger().report_scalar(key, 'val', iteration=epoch, value=value)
+                        clearML_task.get_logger().report_scalar(key, 'val', iteration=(epoch + 1), value=value)
                         clearML_task.get_logger().report_scalar(
-                            "lr", 'val', iteration=epoch, value=self.lr_scheduler.get_lr()[0]
+                            "lr", 'val', iteration=(epoch + 1), value=self.lr_scheduler.get_lr()[0]
                         )
                 results_val.append(results)
 
@@ -642,6 +642,8 @@ class BertLearner(Learner):
                     (epoch + 1), epoch_loss / epoch_step
                 )
             )
+            if self.clearML_task:
+                clearML_task.get_logger().report_scalar('loss', 'train', iteration=(epoch + 1), value=(epoch_loss / epoch_step))
             self.logger.info("\n")
             
 
