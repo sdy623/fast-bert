@@ -25,7 +25,7 @@ def accuracy(y_pred: Tensor, y_true: Tensor, **kwargs):
     outputs = np.argmax(y_pred, axis=1)
     return np.mean(outputs.numpy() == y_true.detach().cpu().numpy())
 
-
+@deprecated(reason="This function will be removed in future versions, use another function instead.")
 def accuracy_multilabel(y_pred: Tensor, y_true: Tensor, sigmoid: bool = True, **kwargs):
     if sigmoid:
         y_pred = y_pred.sigmoid()
@@ -35,6 +35,20 @@ def accuracy_multilabel(y_pred: Tensor, y_true: Tensor, sigmoid: bool = True, **
     real_vals = np.argmax(y_true, axis=1)
     return np.mean(outputs.numpy() == real_vals.numpy())
 
+def accuracy_multilabel_macro(
+        y_pred: Tensor,
+        y_true: Tensor,
+        thresh: float = CLASSIFICATION_THRESHOLD,
+        sigmoid: bool = True, **kwargs
+):
+    if sigmoid:
+        y_pred = y_pred.sigmoid()
+    y_pred = y_pred.cpu()
+    y_true = y_true.cpu()
+    outputs = (y_pred > thresh).float()
+    real_vals = y_true.float()
+    correct_per_class = (outputs == real_vals).float().sum(dim=0) / real_vals.sum(dim=0) # TODO: Check if this is correct
+    return correct_per_class.mean().item()
 
 def accuracy_thresh(
     y_pred: Tensor,
