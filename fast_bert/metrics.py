@@ -70,7 +70,7 @@ def fbeta(
         y_pred = argmax(y_pred, dim=1)
         y_true = y_true.float()
         TP = (y_pred * y_true).sum()
-        prec = TP / (y_pred.sum() + eps)
+        prec = TP / (y_pred.sum() + eps) # prevent division by zero error
         rec = TP / (y_true.sum() + eps)
     else:
         y_pred = (y_pred > thresh).float()

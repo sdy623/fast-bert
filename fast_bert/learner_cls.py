@@ -478,6 +478,7 @@ class BertLearner(Learner):
             self.lr_scheduler = self.get_scheduler(
                 self.optimizer, t_total=t_total, schedule_type=schedule_type
             )
+            # TO DO : manual lr scheduler for call of get_scheduler
             self.callback_handler.optimizer = self.optimizer
             self.callback_handler.lr_scheduler = self.lr_scheduler
 

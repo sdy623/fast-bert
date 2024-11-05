@@ -117,7 +117,7 @@ class Learner(object):
             "warmup_constant": get_constant_schedule_with_warmup,
             "warmup_linear": get_linear_schedule_with_warmup,
             "warmup_cosine_hard_restarts": get_cosine_with_hard_restarts_schedule_with_warmup,
-        }
+        } # TO DO : manual lr scheduler
 
         if schedule_type is None or schedule_type == "none":
             return SCHEDULES[schedule_type](optimizer)
