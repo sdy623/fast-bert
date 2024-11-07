@@ -172,7 +172,7 @@ class Learner(object):
                output=Path.joinpath(path, Path("model.onnx")), opset=15, device=self.device,
                config=bert_onnx_config)
 
-    def upload_model(self, path=None, task: clearml.Task=None, model_name="bert-base-uncased", upload_uri=None):
+    def upload_model(self, path=None, task: clearml.Task=None, model_name="bert-base-uncased", upload_uri=None, metrics=None):
         if not path:
             path = self.output_dir / "model_out"
 
@@ -182,7 +182,7 @@ class Learner(object):
         task_reporter_sc = task.get_all_reported_scalars()
         output_model = clearml.OutputModel(task=task, framework="PyTorch")
 
-        acc_series = task_reporter_sc['accuracy_multilabel']['val']
+        acc_series = task_reporter_sc['accuracy_multilabel_micro']['val']
         f1_series = task_reporter_sc['F1']['val']
         roc_auc_series = task_reporter_sc['ROC_AUC']['val']
         loss_series = task_reporter_sc['loss']['val']
