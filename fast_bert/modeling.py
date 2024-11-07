@@ -156,7 +156,7 @@ class BartForMultiLabelSequenceClassification(BartForSequenceClassification):
         #self.base_model = AutoModel.from_pretrained('bert-base-uncased')
         #self.dropout = nn.Dropout(0.5)
         super(BartForMultiLabelSequenceClassification, self).__init__(config)
-        #self.model.ationclassific_head = nn.Linear(1024, 12)
+        #self.model.classification_head = nn.Linear(1024, 12)
         #self.linear = nn.Linear(768, 2)  # output features from bert is 768 and 2 is ur number of labels
     def forward(
         self,

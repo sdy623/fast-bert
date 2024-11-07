@@ -269,15 +269,7 @@ class TextProcessor(DataProcessor):
                 data_df.sample(size), "test", text_col=text_col, label_col=None
             )
 
-    def get_labels(self, filename="labels.csv"):
-        """See base class."""
-        if self.labels is None:
-            self.labels = list(
-                pd.read_csv(os.path.join(self.label_dir, filename), header=None)[0]
-                .astype("str")
-                .values
-            )
-        return self.labels
+
 
     def _create_examples(self, df, set_type, text_col, label_col):
         """Creates examples for the training and dev sets."""
